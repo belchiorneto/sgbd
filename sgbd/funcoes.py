@@ -1,29 +1,43 @@
 import re
 import os
 import time
-def funcaoHash(elem = 1):
-	m = 2047
-	#m = 16383
-	chave = elem % m
-	return chave
-def criaDiretorios(tab1, tab2):
-	try:
-		os.mkdir(tab1)
-		print("Directory " , tab1 ,  " Created ")
-	except FileExistsError:
-		print("Directory " , tab1 ,  " already exists")
+import hashlib
+from _overlapped import NULL
 
-	try:
-		os.mkdir(tab2)
-		print("Directory " , tab2 ,  " Created ")
-	except FileExistsError:
-		print("Directory " , tab2 ,  " already exists")
+def funcaoHash(elem):
+	hash_object = hashlib.md5(str(elem).encode())
+	hex_dig = hash_object.hexdigest()
+	#print(hex_dig)
+	#m = 2047
+	#m = 16383
+	#chave = elem % m
+	return hex_dig
+def criaDiretorios(tabelas):
+	count = len(tabelas)
+	while (count >= 0):
+		folder = "" #para as pastas com mais de uma tabela
+		for i in range(count):
+			
+			if(i == count-1):
+				folder = folder + tabelas[i]
+			else:
+				folder = folder + tabelas[i] + "_"
+		count = count - 1
+		if(count > 0):
+			try:
+				os.mkdir(folder)
+				print("Directory " , folder ,  " Created ")
+			except FileExistsError:
+				print("Directory " , folder ,  " already exists")
+		else:
+			try:
+				os.mkdir(tabelas[count])
+				print("Directory " , tabelas[count] ,  " Created ")
+			except FileExistsError:
+				print("Directory " , tabelas[count] ,  " already exists")
 	
-	try:
-		os.mkdir(tab1+"_"+tab2)
-		print("Directory " , tab1+"_"+tab2 ,  " Created ")
-	except FileExistsError:
-		print("Directory " , tab1+"_"+tab2 ,  " already exists")
+		
+
 def varrerTab(tabela, indice=0):
 	arquivo = open(tabela + ".txt", "r")
 	arq_tab_hash = open("TabelaHash.txt", "w+")
@@ -32,8 +46,8 @@ def varrerTab(tabela, indice=0):
 		capt_chave = capChave(linha_arquivo,indice)
 		chave = funcaoHash(capt_chave)
 		tab_hash(chave)
-		arq_bucket_criacao = criarBucket(chave)
-		preencher_bucket = preencherBucket(linha_arquivo, arq_bucket_criacao)
+		arq_bucket_criacao = criarBucket(chave, tabela)
+		preencher_bucket = preencherBucket(linha_arquivo, arq_bucket_criacao, tabela)
 		#chave vai pra tabela hash
 		#com a chave tambem cria o bucket
 		
@@ -48,10 +62,10 @@ def varrerTab(tabela, indice=0):
 
 def capChave(tupla = "0, cidade, UF", indicevetor = 0):
 	tuplaF = tupla.split()
-	print(tuplaF)	
+	vetor = ""
 	vetor = tuplaF[indicevetor]
-	#print(vetor)
-	return int(vetor) #ou a posicao desejada do vetor
+	return vetor #ou a posicao desejada do vetor
+	
 
 #valor Ã© numero, para ser comparado a tabela
 #devemos adicionar um \n que Ã© o final da linha da tabela
@@ -83,11 +97,7 @@ def preencherBucket(tuplaInteira, nomearq, tab):
 #valor = capChave2("(38, 'seashell floral bisque midnight black', 'Manufacturer#4           ', 'Brand#43  ', 'ECONOMY ANODIZED BRASS', 11, 'SM JAR    ', 938.030029296875, 'furiously pend') ",0)
 #print(valor)	
 
-def funcaoJuncaoAB(atriJuncaoA, atriJuncaoB, indice, tab1, tab2):
-	
-	
-    	
-    	
+def funcaoJuncao(atriJuncaoA, atriJuncaoB, indice, tab1, tab2):
 	
 	#bucketB = open("TabelaB/Bucket"+str(1)+".txt","r")
 	bucketA = open(tab1+"/Bucket"+str(indice)+".txt","r")
@@ -150,14 +160,58 @@ def qtdeArquivosPasta(diretorio="TabelaA/"):
 	return v
 
 #jun = qtdeArquivosPasta()
-def lerHashJuncao(atrA,atrB,v):
+def lerHashJuncao(atrA,atrB,v, tabA, tabB):
 	inicio = time.time()
 	abrir = open("TabelaHash.txt", "r")
 	v = 0
 	for line in abrir:
-		v = int(line.replace("\n",""))
-		funcaoJuncao(atrA,atrB, v)
+		v = line.replace("\n","")
+		funcaoJuncao(atrA,atrB, v, tabA, tabB)
 		#print(v)
 	fim = time.time()
 
 	print("Tempo total para juncao: ",fim-inicio)
+	
+def getTableFromSqlCmd(sqlcmd):
+	sqlcmd.lower()
+	# tabelas
+	tabs = sqlcmd.split("from");
+	if(len(tabs[1].split("on")) > 1):
+	    # caso de join
+	    tabs = tabs[1].split(" on ");
+	    tabs = tabs[0].split(" join ")
+	else:
+	    # caso separado por virgula
+	    tabs = tabs[1].split(" where ")
+	    tabs = tabs[0].split(",")
+	    for i in range(len(tabs)):
+		    tabs[i] = tabs[i].strip()
+	return tabs
+
+def getfieldsFromSqlCmd(sqlcmd):
+	sqlcmd.lower()
+	# campos
+	fields = sqlcmd.split("from");
+	fields = fields[0].split("select")
+	fields = fields[1].split(",")
+	for i in range(len(fields)):
+		fields[i] = fields[i].strip()
+	return fields
+
+def getJoinFromSqlCmd(sqlcmd):
+	sqlcmd.lower()
+	# joins
+	joins = sqlcmd.split("where");
+	ands = joins[1].split("and")
+	if(len(ands) > 1):
+		#mais de uma condição de junção
+		joins = joins[1].split("and")
+	else:
+		#apenas uma condicao de juncao
+		joins = joins[1]
+		
+	for i in range(len(joins)):
+		joins[i] = joins[i].strip()
+				
+	return joins
+	

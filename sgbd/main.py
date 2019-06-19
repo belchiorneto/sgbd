@@ -9,46 +9,29 @@ from conexaosql import *
 #################CONEXAO COM O BANCO#################
 cursor = conexaoBanco()
 
-tabelas = input("Entre com as tabelas, sepadaradas por espaço: ")
-tabelas_join = tabelas.split()
+sqlcmd = input("Entre o comando SQL")
 
 
-tabela1 = selecionarTABELA(cursor,tabelas_join[0])
-tabela2 = selecionarTABELA(cursor,tabelas_join[1])
-#tabela3 = selecionarTABELA(cursor,tabelas_join[2])
+tabelas = getTableFromSqlCmd(sqlcmd);
+campos = getfieldsFromSqlCmd(sqlcmd);
+joinconditions = getJoinFromSqlCmd(sqlcmd);
+print(joinconditions)
+camposIdex = getfieldIdex(cursor, campos, tabelas);
 
+        
+criaDiretorios(tabelas);
 
-mostrarAtribTabela(cursor,tabela1)
-mostrarAtribTabela(cursor,tabela2)
+for tabela in tabelas:
+    tabela_ = selecionarTABELA(cursor,tabela)
+    mostrarAtribTabela(cursor,tabela_)
+    for index in camposIdex:
+        varrerTab(tabela,index)
 
-atrib_juncao1 = input("Entre com o num do atrib de juncao para tabelas "+tabela1+" e "+tabela2+" :")
-atrib_selec = re.sub(" ", "", atrib_juncao1)
-atrib_selec.split()
-
-indiceTabelaA = int(atrib_selec[0])
-indiceTabelaB = int(atrib_selec[1])
-
-#mostrarAtribTabela(cursor,tabela2)
-#mostrarAtribTabela(cursor,tabela3)
-
-#atrib_juncao1 = input("Entre com o num do atrib de juncao para tabelas "+tabela1+" e "+tabela2+" :")
-#atrib_selec = re.sub(" ", "", atrib_juncao1)
-#atrib_selec.split()
-
-indiceTabelaBB = int(atrib_selec[0])
-indiceTabelaC = int(atrib_selec[1])
-
-#####################################################
-
-#################VARRENDO AS TABELAS#################
-criaDiretorios(tabela1, tabela2);
-varrerTab(tabela1,indiceTabelaA)
-varrerTab(tabela2,indiceTabelaB)
-#varrerTab(tabela3,indiceTabelaC)
-#####################################################
-
-#################JOIN DAS AS TABELAS#################
-qtdeArq = qtdeArquivosPasta("TabelaA/")
-#lerHashJuncao(indiceTabelaA,indiceTabelaB,qtdeArq)
-
-#####################################################
+for tabelaA in tabelas:
+    for tabelaB in tabelas:
+        qtdeArqA = qtdeArquivosPasta(tabelaA)
+        qtdeArqB = qtdeArquivosPasta(tabelaA)
+        if(qtdeArqA < qtdeArqB):
+            lerHashJuncao(indiceTabelaA,indiceTabelaB,qtdeArqA, tabelaA, tabelaB)
+        else:
+            lerHashJuncao(indiceTabelaB,indiceTabelaA,qtdeArqB, tabelaA, tabelaB)
