@@ -15,8 +15,8 @@ sqlcmd = input("Entre o comando SQL")
 tabelas = getTableFromSqlCmd(sqlcmd);
 campos = getfieldsFromSqlCmd(sqlcmd);
 joinconditions = getJoinFromSqlCmd(sqlcmd);
-print(joinconditions)
 camposIdex = getfieldIdex(cursor, campos, tabelas);
+
 
         
 criaDiretorios(tabelas);
@@ -25,13 +25,17 @@ for tabela in tabelas:
     tabela_ = selecionarTABELA(cursor,tabela)
     mostrarAtribTabela(cursor,tabela_)
     for index in camposIdex:
-        varrerTab(tabela,index)
+        
+        for k in index:
+            varrerTab(tabela,index.get(k))
 
 for tabelaA in tabelas:
     for tabelaB in tabelas:
         qtdeArqA = qtdeArquivosPasta(tabelaA)
-        qtdeArqB = qtdeArquivosPasta(tabelaA)
-        if(qtdeArqA < qtdeArqB):
-            lerHashJuncao(indiceTabelaA,indiceTabelaB,qtdeArqA, tabelaA, tabelaB)
-        else:
-            lerHashJuncao(indiceTabelaB,indiceTabelaA,qtdeArqB, tabelaA, tabelaB)
+        qtdeArqB = qtdeArquivosPasta(tabelaB)
+        if(tabelaA != tabelaB):
+            
+            if(qtdeArqA < qtdeArqB):
+                lerHashJuncao(camposIdex, joinconditions, qtdeArqA, tabelaA, tabelaB)
+            else:
+                lerHashJuncao(camposIdex, joinconditions, qtdeArqB, tabelaB, tabelaA)

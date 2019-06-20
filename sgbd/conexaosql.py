@@ -10,13 +10,13 @@ import _thread
 os.system('cls')
 
 def conexaoBanco():
-	senha = getpass.getpass('Entre com a senha do SQL Server: ')
+	#senha = getpass.getpass('Entre com a senha do SQL Server: ')
 	
 	conexaoBanco = pyodbc.connect('DRIVER={ODBC Driver 11 for SQL Server};'
-	                      'SERVER=SERVIDOR\SQLEXPRESS;'
-	                      'DATABASE=lojas;'
+	                      'SERVER=NOTE\SQLEXPRESS;'
+	                      'DATABASE=tpch;'
 	                      'UID=sa;'
-	                      'PWD=1234;')
+	                      'PWD=;')
 
 	cursor = conexaoBanco.cursor()
 	return cursor
@@ -67,8 +67,9 @@ def getfieldIdex(cursor, campos, tabelas):
 			for campo2 in row:
 				for campo in campos:
 					if(campo == campo2):
-						camposindex.append(i);
-						print (campo2)
+						newvalues = {campo : i}
+						camposindex.append(newvalues);
+						
 				i = i + 1
 	return camposindex	
 			

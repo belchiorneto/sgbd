@@ -7,7 +7,6 @@ from _overlapped import NULL
 def funcaoHash(elem):
 	hash_object = hashlib.md5(str(elem).encode())
 	hex_dig = hash_object.hexdigest()
-	#print(hex_dig)
 	#m = 2047
 	#m = 16383
 	#chave = elem % m
@@ -40,18 +39,19 @@ def criaDiretorios(tabelas):
 
 def varrerTab(tabela, indice=0):
 	arquivo = open(tabela + ".txt", "r")
-	arq_tab_hash = open("TabelaHash.txt", "w+")
-	arq_tab_hash.close()
+	arq_tab_hash = open("TabelaHash.txt", "a+")
+	
 	for linha_arquivo in arquivo:
 		capt_chave = capChave(linha_arquivo,indice)
 		chave = funcaoHash(capt_chave)
-		tab_hash(chave)
+		tab_hash(chave, arq_tab_hash)
 		arq_bucket_criacao = criarBucket(chave, tabela)
 		preencher_bucket = preencherBucket(linha_arquivo, arq_bucket_criacao, tabela)
 		#chave vai pra tabela hash
 		#com a chave tambem cria o bucket
 		
 	arquivo.close()
+	arq_tab_hash.close()
 
 #arq = open("teste.txt", "r+")
 
@@ -60,10 +60,12 @@ def varrerTab(tabela, indice=0):
 # para a tabela de dispersao
 #aux = re.sub("[],[',()]", "", aux)
 
-def capChave(tupla = "0, cidade, UF", indicevetor = 0):
+def capChave(tupla, indicevetor):
 	tuplaF = tupla.split()
 	vetor = ""
-	vetor = tuplaF[indicevetor]
+	print(tuplaF)
+	print(indicevetor)
+	#vetor = tuplaF[indicevetor]
 	return vetor #ou a posicao desejada do vetor
 	
 
@@ -72,14 +74,23 @@ def capChave(tupla = "0, cidade, UF", indicevetor = 0):
 #valor = funcaoHash(245)
 #valor = str(valor) + '\n'
 
-def tab_hash(chave):
-	tabela_hash = open("TabelaHash.txt", "r+")
-	chave = str(chave)+'\n'
+def tab_hash(chave, hashtable):
+	#get line
+	lista = open("TabelaHash.txt", 'r').read().split()
+	chave = str(chave)
+	
+	if chave in lista:
+		#print("encontrado")
+		return
+	else:
+		file = open("TabelaHash.txt", 'a+')
+		file.write(chave +'\n')
+		file.close()
+	
+		
+	
+	
 
-	if chave not in tabela_hash:
-		tabela_hash.write(chave)
-		#tabela_hash.write("\n")
-	tabela_hash.close()
 
 def criarBucket(valor, tab):
 	nomearq = "Bucket" + str(valor) + ".txt"
@@ -99,17 +110,22 @@ def preencherBucket(tuplaInteira, nomearq, tab):
 
 def funcaoJuncao(atriJuncaoA, atriJuncaoB, indice, tab1, tab2):
 	
-	#bucketB = open("TabelaB/Bucket"+str(1)+".txt","r")
+	try:
+		os.mkdir(tab1+"_"+tab2)
+		print("Directory " , tab1+"_"+tab2 ,  " Created ")
+	except FileExistsError:
+		print("Directory " , tab1+"_"+tab2 ,  " already exists")
 	bucketA = open(tab1+"/Bucket"+str(indice)+".txt","r")
-	tabAB = open(tab1+"_"+tab2+"/"+tab1+"_"+tab2+".txt","a+")
+	tabAB = open(tab1+"_"+tab2+"/"+tab1+"_"+tab2+".txt","w+")
 	for A in bucketA:
 		linhaA = A.split()
 		#print(linhaA)
 		bucketB = open(tab2+"/Bucket"+str(indice)+".txt","r")
 		for B in bucketB:
 			linhaB = B.split()
-			#print("		"+str(linhaB))
+			
 			if (linhaA[atriJuncaoA]==linhaB[atriJuncaoB]):
+				print("		"+str(linhaA[atriJuncaoA]) + " -- " + str(linhaB[atriJuncaoB]))
 				tabAB.write(str(linhaA)+str(linhaB)+"\n")
 		bucketB.close()
 	bucketA.close()
@@ -160,13 +176,52 @@ def qtdeArquivosPasta(diretorio="TabelaA/"):
 	return v
 
 #jun = qtdeArquivosPasta()
-def lerHashJuncao(atrA,atrB,v, tabA, tabB):
+def lerHashJuncao(camposindex, atributos, v, tabA, tabB):
+	
 	inicio = time.time()
 	abrir = open("TabelaHash.txt", "r")
 	v = 0
+	atrA = ""
+	atrB = ""
+	keyforA = 0
+	keyforB = 0
+	if isinstance(atributos, str):
+		partes = atributos.split(" = ")
+		for parte in partes:
+			parte = parte.strip()
+			if(parte.split(".")[0] == tabA):
+				atrA = parte.split(".")[1]
+			if(parte.split(".")[0] == tabB):
+				atrB = parte.split(".")[1]
+	else:
+		
+		for atributo in atributos:
+			partes = atributo.split(" = ")
+			parte = parte.strip()
+			
+			if(partes.split(".")[0] == tabA):
+				atrA = partes.split(".")[1]
+				
+			if(partes.split(".")[0] == tabB):
+				atrB = partes.split(".")[1]
+				
+	
+	for campo in camposindex:
+				
+		for k in campo:
+			if(campo.get(atrA) != None):
+				keyforA = campo.get(atrA)
+			if(campo.get(atrB) != None):
+				keyforB = campo.get(atrB)
+						
+	print("Atributo a: " +str(keyforA))
+	
+	print("Atributo b: " +str(keyforB))
+	
 	for line in abrir:
 		v = line.replace("\n","")
-		funcaoJuncao(atrA,atrB, v, tabA, tabB)
+		if(os.path.isfile(tabA+"/Bucket"+str(v)+".txt")):
+			funcaoJuncao(keyforA ,keyforB, v, tabA, tabB)
 		#print(v)
 	fim = time.time()
 
@@ -175,13 +230,15 @@ def lerHashJuncao(atrA,atrB,v, tabA, tabB):
 def getTableFromSqlCmd(sqlcmd):
 	sqlcmd.lower()
 	# tabelas
-	tabs = sqlcmd.split("from");
-	if(len(tabs[1].split("on")) > 1):
+	tabs = sqlcmd.split(" from ");
+	if(len(tabs[1].split(" on ")) > 1):
 	    # caso de join
+	  
 	    tabs = tabs[1].split(" on ");
 	    tabs = tabs[0].split(" join ")
 	else:
 	    # caso separado por virgula
+	   
 	    tabs = tabs[1].split(" where ")
 	    tabs = tabs[0].split(",")
 	    for i in range(len(tabs)):
@@ -206,12 +263,13 @@ def getJoinFromSqlCmd(sqlcmd):
 	if(len(ands) > 1):
 		#mais de uma condição de junção
 		joins = joins[1].split("and")
+		for i in range(len(joins)):
+			joins[i] = joins[i].strip()
 	else:
 		#apenas uma condicao de juncao
 		joins = joins[1]
 		
-	for i in range(len(joins)):
-		joins[i] = joins[i].strip()
+	
 				
 	return joins
 	
