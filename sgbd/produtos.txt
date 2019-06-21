@@ -1,2 +1,0 @@
-1 100 geladeira 
-3 5000 carro 

@@ -11,44 +11,22 @@ from sqlFormat import sqlFormat
 #################CONEXAO COM O BANCO#################
 cursor = conexaoBanco()
 
+print("=================================================\n")
+print("Formato do SQL \"select t1.campo1, t2.campo2, tn.campon from t1, t2, tn where t1.campo1 = t2.campo1 and t2.campo2 = t3.campo3 and tn.campon = tn.campon\" (ENTER)\n")
+print("=================================================\n")
 sqlcmd = input("Entre o comando SQL")
 
 sqlformat = sqlFormat(cursor, sqlcmd)
 sqlformat.getTableFromSqlCmd()
 
-#sqlformat.getfieldsFromSqlCmd()
-#sqlformat.getJoinFromSqlCmd()
-
 for table in sqlformat.tabelas:
-    print(table.name)
-    print(table.fields)
-    print(table.joins)
+    print("Nome: " + table.name)
+    print("Fields: " + str(table.fields))
+    print("joins: " + str(table.joins))
+    print("tamanho: " + str(table.size))
+    print("indexes: " + str(table.fieldsIdx))
    
-
-#tabelas = getTableFromSqlCmd(sqlcmd);
-#campos = getfieldsFromSqlCmd(sqlcmd);
-#joinconditions = getJoinFromSqlCmd(sqlcmd);
-camposIdex = getfieldIdex(cursor, campos, tabelas);
-
-
-        
-criaDiretorios(tabelas);
-
-for tabela in tabelas:
-    tabela_ = selecionarTABELA(cursor,tabela)
-    mostrarAtribTabela(cursor,tabela_)
-    for index in camposIdex:
-        
-        for k in index:
-            varrerTab(tabela,index.get(k))
-
-for tabelaA in tabelas:
-    for tabelaB in tabelas:
-        qtdeArqA = qtdeArquivosPasta(tabelaA)
-        qtdeArqB = qtdeArquivosPasta(tabelaB)
-        if(tabelaA != tabelaB):
-            
-            if(qtdeArqA < qtdeArqB):
-                lerHashJuncao(camposIdex, joinconditions, qtdeArqA, tabelaA, tabelaB)
-            else:
-                lerHashJuncao(camposIdex, joinconditions, qtdeArqB, tabelaB, tabelaA)
+sqlformat.criaDiretorios()
+sqlformat.gerarTXTs()
+sqlformat.geraBuckets()
+sqlformat.joins(0) # chama primeira join (tabela 0 com tabela 1)
