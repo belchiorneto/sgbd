@@ -63,9 +63,9 @@ def varrerTab(tabela, indice=0):
 def capChave(tupla, indicevetor):
 	tuplaF = tupla.split()
 	vetor = ""
-	print(tuplaF)
 	print(indicevetor)
-	#vetor = tuplaF[indicevetor]
+	print(tuplaF)
+	vetor = tuplaF[indicevetor]
 	return vetor #ou a posicao desejada do vetor
 	
 
@@ -86,11 +86,6 @@ def tab_hash(chave, hashtable):
 		file = open("TabelaHash.txt", 'a+')
 		file.write(chave +'\n')
 		file.close()
-	
-		
-	
-	
-
 
 def criarBucket(valor, tab):
 	nomearq = "Bucket" + str(valor) + ".txt"
@@ -105,8 +100,7 @@ def preencherBucket(tuplaInteira, nomearq, tab):
 	bucket.write(tuplaInteira)
 	bucket.close()
 
-#valor = capChave2("(38, 'seashell floral bisque midnight black', 'Manufacturer#4           ', 'Brand#43  ', 'ECONOMY ANODIZED BRASS', 11, 'SM JAR    ', 938.030029296875, 'furiously pend') ",0)
-#print(valor)	
+
 
 def funcaoJuncao(atriJuncaoA, atriJuncaoB, indice, tab1, tab2):
 	
@@ -125,46 +119,13 @@ def funcaoJuncao(atriJuncaoA, atriJuncaoB, indice, tab1, tab2):
 			linhaB = B.split()
 			
 			if (linhaA[atriJuncaoA]==linhaB[atriJuncaoB]):
-				print("		"+str(linhaA[atriJuncaoA]) + " -- " + str(linhaB[atriJuncaoB]))
 				tabAB.write(str(linhaA)+str(linhaB)+"\n")
 		bucketB.close()
 	bucketA.close()
 	tabAB.close()
 
 
-def funcaoJuncaoBC(atriJuncaoB, atriJuncaoC, indice):
-	bucketB = open("TabelaB/Bucket"+str(indice)+".txt","r")
-	tabBC = open("TabelaBC/TabelaBC.txt","a+")
-	for B in bucketB:
-		linhaB = B.split()
-		#print(linhaA)
-		bucketC = open("TabelaC/Bucket"+str(indice)+".txt","r")
-		for C in bucketC:
-			linhaC = C.split()
-			#print("		"+str(linhaB))
-			if (linhaB[atriJuncaoB]==linhaC[atriJuncaoC]):
-				tabBC.write(str(linhaB)+str(linhaC)+"\n")
-		bucketC.close()	
-	
-	bucketB.close()
-	tabBC.close()
 
-def funcaoJuncaoABC(atriJuncaoAB, atriJuncaoBC, indice):
-	bucketAB = open("TabelaAB/Bucket"+str(indice)+".txt","r")
-	tabABC = open("TabelaABC/TabelaABC.txt","a+")
-	for A in bucketAB:
-		linhaAB = A.split()
-		#print(linhaA)
-		bucketBC = open("TabelaBC/Bucket"+str(indice)+".txt","r")
-		for B in bucketBC:
-			linhaBC = B.split()
-			#print("		"+str(linhaB))
-			if (linhaAB[atriJuncaoAB]==linhaBC[atriJuncaoBC]):
-				tabABC.write(str(linhaAB)+str(linhaBC)+"\n")
-		bucketBC.close()
-
-	bucketAB.close()
-	tabABC.close()
 
 #formato do diretÃ³rio: TabelaAB
 def qtdeArquivosPasta(diretorio="TabelaA/"):
@@ -227,49 +188,5 @@ def lerHashJuncao(camposindex, atributos, v, tabA, tabB):
 
 	print("Tempo total para juncao: ",fim-inicio)
 	
-def getTableFromSqlCmd(sqlcmd):
-	sqlcmd.lower()
-	# tabelas
-	tabs = sqlcmd.split(" from ");
-	if(len(tabs[1].split(" on ")) > 1):
-	    # caso de join
-	  
-	    tabs = tabs[1].split(" on ");
-	    tabs = tabs[0].split(" join ")
-	else:
-	    # caso separado por virgula
-	   
-	    tabs = tabs[1].split(" where ")
-	    tabs = tabs[0].split(",")
-	    for i in range(len(tabs)):
-		    tabs[i] = tabs[i].strip()
-	return tabs
 
-def getfieldsFromSqlCmd(sqlcmd):
-	sqlcmd.lower()
-	# campos
-	fields = sqlcmd.split("from");
-	fields = fields[0].split("select")
-	fields = fields[1].split(",")
-	for i in range(len(fields)):
-		fields[i] = fields[i].strip()
-	return fields
-
-def getJoinFromSqlCmd(sqlcmd):
-	sqlcmd.lower()
-	# joins
-	joins = sqlcmd.split("where");
-	ands = joins[1].split("and")
-	if(len(ands) > 1):
-		#mais de uma condição de junção
-		joins = joins[1].split("and")
-		for i in range(len(joins)):
-			joins[i] = joins[i].strip()
-	else:
-		#apenas uma condicao de juncao
-		joins = joins[1]
-		
-	
-				
-	return joins
 	

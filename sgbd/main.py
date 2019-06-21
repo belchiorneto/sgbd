@@ -5,16 +5,29 @@ import pyodbc
 import getpass
 from funcoes import *
 from conexaosql import *
+from sqlFormat import sqlFormat
+
 
 #################CONEXAO COM O BANCO#################
 cursor = conexaoBanco()
 
 sqlcmd = input("Entre o comando SQL")
 
+sqlformat = sqlFormat(cursor, sqlcmd)
+sqlformat.getTableFromSqlCmd()
 
-tabelas = getTableFromSqlCmd(sqlcmd);
-campos = getfieldsFromSqlCmd(sqlcmd);
-joinconditions = getJoinFromSqlCmd(sqlcmd);
+#sqlformat.getfieldsFromSqlCmd()
+#sqlformat.getJoinFromSqlCmd()
+
+for table in sqlformat.tabelas:
+    print(table.name)
+    print(table.fields)
+    print(table.joins)
+   
+
+#tabelas = getTableFromSqlCmd(sqlcmd);
+#campos = getfieldsFromSqlCmd(sqlcmd);
+#joinconditions = getJoinFromSqlCmd(sqlcmd);
 camposIdex = getfieldIdex(cursor, campos, tabelas);
 
 
