@@ -25,8 +25,10 @@ for table in sqlformat.tabelas:
     print("joins: " + str(table.joins))
     print("tamanho: " + str(table.size))
     print("indexes: " + str(table.fieldsIdx))
+    
    
 sqlformat.criaDiretorios()
 sqlformat.gerarTXTs()
+sqlformat.geraHashTables()
 sqlformat.geraBuckets()
 sqlformat.joins(0) # chama primeira join (tabela 0 com tabela 1)

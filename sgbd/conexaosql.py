@@ -12,7 +12,7 @@ def conexaoBanco():
 	
 	conexaoBanco = pyodbc.connect('DRIVER={ODBC Driver 11 for SQL Server};'
 	                      'SERVER=SERVIDOR\SQLEXPRESS;'
-	                      'DATABASE=lojas;'
+	                      'DATABASE=tpc_h;'
 	                      'UID=sa;'
 	                      'PWD=1234;')
 

@@ -1,12 +1,17 @@
 import os
 import time
 import string
+import os.path
+from os import path
 
 
 from tableSql import *
+from random import paretovariate
 
 class sqlFormat(object):
     tabelas = []
+    readOP = 0;
+    writeOp = 0;
     def __init__(self,cursor, sqlcmd):
         self.cursor = cursor
         self.sql = sqlcmd
@@ -76,10 +81,14 @@ class sqlFormat(object):
             #apenas uma condicao de juncao
             
             partes = joins[1].split(" = ")
-            if(partes[0].split(".")[0] == tab):
-                retorno[partes[1]] = partes[0].split(".")[1]
-                retorno[partes[0]] = partes[1].split(".")[1]
-        
+            for i in range(len(partes)):
+                partes[i] = partes[i].strip()
+            t1 = partes[0].split(".")[0]
+            t2 = partes[1].split(".")[0]
+            c1 = partes[0].split(".")[1]
+            c2 = partes[1].split(".")[1] 
+            retorno[t1+"."+t2] = c1
+            retorno[t2+"."+t1] = c2
         return retorno
     
     def tableSize(self, tab):
@@ -143,11 +152,13 @@ class sqlFormat(object):
             fim = time.time()
             print("Tempo total para gerar txt da tabela "+tab.name+": ",fim-inicio)
     
-    def geraBuckets(self):
+    def geraHashTables(self):
         inicio = time.time()
         tabelas = self.tabelas
         for tab in tabelas:
+            print("tabela: " + tab.name)
             arquivo = open(tab.name + ".txt", "r")
+            self.readOP = self.readOP + 1; 
             hashTable = {}
             for linha_arquivo in arquivo:
                 campos = linha_arquivo.split(" ")
@@ -155,21 +166,55 @@ class sqlFormat(object):
                     if key.split(".")[1] != tab.name:
                         hashkey = self.funcaoHashGeneric(campos[tab.fieldsIdx[tab.joins[key]]], tab.size)
                         hashTable[hashkey] = campos[tab.fieldsIdx[tab.joins[key]]]
-                        arq_bucket_criacao = self.criarBucket(hashkey, tab.name)
-                        preencher_bucket = self.preencherBucket(linha_arquivo, arq_bucket_criacao, tab.name)
             arquivo.close()
+           
             tab.sethashTable(hashTable)
-        fim = time.time()
-        print("Tempo total para gerar buckets: ",fim-inicio)
+            fim = time.time()
+            print("Tempo total para gerar hashtable em "+tab.name+": ",fim-inicio)
+    def geraBuckets(self):
+        inicio = time.time()
+        tabelas = self.tabelas
+        for tab in tabelas:
+            print("tabela: " + tab.name)
+            
+            # criar buckets
+            
+            for hashkey in tab.hashTable:
+                arq_bucket_criacao = self.criarBucket(hashkey, tab.name)
+                buffer = ""
+                bufferindex = 0;
+                arquivo = open(tab.name + ".txt", "r")
+                for linha_arquivo in arquivo:
+                    campos = linha_arquivo.split(" ")
+                    for key in tab.joins:
+                        if key.split(".")[1] != tab.name:
+                            newhash = self.funcaoHashGeneric(campos[tab.fieldsIdx[tab.joins[key]]], tab.size)
+                            if(hashkey == newhash):
+                                buffer = buffer + linha_arquivo
+                                bufferindex = bufferindex + 1
+                            
+                print(str(len(buffer)))
+                preencher_bucket = self.preencherBucket(buffer, arq_bucket_criacao, tab.name)
+                arquivo.close()
+            
+            fim = time.time()
+            print("Tempo total para gerar bucket em "+tab.name+": ",fim-inicio)
     
     def criarBucket(self, valor, tab):
         nomearq = "Bucket" + str(valor) + ".txt"
-        arq_bucket = open(tab+"/"+nomearq, "a").close()
-        return nomearq
+        if path.exists(tab+"/"+nomearq):
+            return nomearq
+        else:
+            arq_bucket = open(tab+"/"+nomearq, "a").close()
+            self.readOP = self.readOP + 1;
+            return nomearq
 
     def preencherBucket(self, tuplaInteira, nomearq, tab):
         bucket = open(tab+"/"+nomearq, "a+")
+        
+        self.readOP = self.readOP + 1; 
         bucket.write(tuplaInteira)
+        self.writeOp = self.writeOp + 1; 
         bucket.close()
 
     def joins(self, tabNum):
@@ -213,7 +258,7 @@ class sqlFormat(object):
                                 tabAB.write(linhafinal+"\n")
                         tabAB.close()
                 bucketB.close()
-        bucketA.close()
+            bucketA.close()
         fim = time.time()
         print("Tempo total Join "+ tabA.name+ " com " +tabB.name + ": ",fim-inicio)
         
@@ -238,8 +283,10 @@ class sqlFormat(object):
         chave_hash = ((a*value + b)% p) % tablesize
         return chave_hash
     
-    
-                    
+    def escritas(self):
+        return self.writeOp
+    def leituras(self):
+        return self.readOP                
            
                 
         
