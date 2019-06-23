@@ -142,126 +142,132 @@ class sqlFormat(object):
             inicio = time.time()
             self.cursor.execute("SELECT * from "+tab.name+"")
             
+            buffer = ""
             for row in self.cursor:
+                
                 auxiliar = ""
                 for campo in row:
-                    auxiliar = auxiliar + str(campo) + " "
-                arquivo.write(str(auxiliar) + '\n')
-                
+                    auxiliar += str(campo) + "(###)" #separador de campos pra ser usado no split("(###)")
+                buffer += auxiliar + '\n'
+                if len(buffer) > 40000:
+                    arquivo.write(str(buffer))
+                    buffer = ""
+            arquivo.write(str(buffer)) # grava o resto  
         
             fim = time.time()
             print("Tempo total para gerar txt da tabela "+tab.name+": ",fim-inicio)
     
-    def geraHashTables(self):
-        inicio = time.time()
-        tabelas = self.tabelas
-        for tab in tabelas:
-            print("tabela: " + tab.name)
-            arquivo = open(tab.name + ".txt", "r")
-            self.readOP = self.readOP + 1; 
-            hashTable = {}
-            for linha_arquivo in arquivo:
-                campos = linha_arquivo.split(" ")
-                for key in tab.joins:
-                    if key.split(".")[1] != tab.name:
-                        hashkey = self.funcaoHashGeneric(campos[tab.fieldsIdx[tab.joins[key]]], tab.size)
-                        hashTable[hashkey] = campos[tab.fieldsIdx[tab.joins[key]]]
-            arquivo.close()
-           
-            tab.sethashTable(hashTable)
-            fim = time.time()
-            print("Tempo total para gerar hashtable em "+tab.name+": ",fim-inicio)
     def geraBuckets(self):
         inicio = time.time()
         tabelas = self.tabelas
         for tab in tabelas:
-            print("tabela: " + tab.name)
-            
-            # criar buckets
-            
-            for hashkey in tab.hashTable:
-                arq_bucket_criacao = self.criarBucket(hashkey, tab.name)
-                buffer = ""
-                bufferindex = 0;
-                arquivo = open(tab.name + ".txt", "r")
-                for linha_arquivo in arquivo:
-                    campos = linha_arquivo.split(" ")
-                    for key in tab.joins:
-                        if key.split(".")[1] != tab.name:
-                            newhash = self.funcaoHashGeneric(campos[tab.fieldsIdx[tab.joins[key]]], tab.size)
-                            if(hashkey == newhash):
-                                buffer = buffer + linha_arquivo
-                                bufferindex = bufferindex + 1
+            bytesgravados = 0;
+            arquivo = open(tab.name + ".txt", "r")
+            self.readOP = self.readOP + 1; 
+            hashTable = {}
+            for linha_arquivo in arquivo:
+                linha_arquivo = linha_arquivo.strip()
+                campos = linha_arquivo.split("(###)")
+                for key in tab.joins:
+                    if key.split(".")[1] != tab.name:
+                        joinkey = tab.joins[key]
+                        fieldkey = tab.fieldsIdx[joinkey]
+                        hashkey = self.funcaoHashGeneric(campos[fieldkey], tab.size)
+                        
+                        hashTable[hashkey] = campos[tab.fieldsIdx[tab.joins[key]]]
+                        #adiciona linha ao buffer
+                        if hashkey in tab.buffer:
+                            tab.buffer[hashkey] += linha_arquivo +'\n'
+                        else:
+                            tab.buffer[hashkey] = linha_arquivo +'\n'
+                        if(tab.getBufferSize() > tab.bufferlimit):
+                            bytesgravados = bytesgravados + tab.getBufferSize();
+                            print("gravados " + str(bytesgravados) + " bytes ...")
+                            tab.descarregarBucket()
+            bytesgravados = bytesgravados + tab.getBufferSize();
+            print("gravados " + str(bytesgravados) + " bytes ...")
+            tab.descarregarBucket() # se for menor que o buffer
+                        
                             
-                print(str(len(buffer)))
-                preencher_bucket = self.preencherBucket(buffer, arq_bucket_criacao, tab.name)
-                arquivo.close()
+            arquivo.close()
             
+            tab.sethashTable(hashTable)
+            hashfile = open(tab.name + "_hashtable.txt", "w")
+            for key in hashTable:
+                hashfile.write(str(key) +" "+ str(hashTable[key]) +"\n")
+            hashfile.close()
             fim = time.time()
-            print("Tempo total para gerar bucket em "+tab.name+": ",fim-inicio)
-    
-    def criarBucket(self, valor, tab):
-        nomearq = "Bucket" + str(valor) + ".txt"
-        if path.exists(tab+"/"+nomearq):
-            return nomearq
-        else:
-            arq_bucket = open(tab+"/"+nomearq, "a").close()
-            self.readOP = self.readOP + 1;
-            return nomearq
-
-    def preencherBucket(self, tuplaInteira, nomearq, tab):
-        bucket = open(tab+"/"+nomearq, "a+")
-        
-        self.readOP = self.readOP + 1; 
-        bucket.write(tuplaInteira)
-        self.writeOp = self.writeOp + 1; 
-        bucket.close()
-
+            print("Tempo total para gerar buckets em "+tab.name+": ",fim-inicio)
+            inicio = fim
+   
     def joins(self, tabNum):
+        
         inicio = time.time()
         tabA = self.tabelas[tabNum]
         tabB = self.tabelas[tabNum + 1]
         
+        '''
+        nesse caso se escolhemos a tabela menor, alguns itens nao sao listados
         if tabA.size > tabB.size:
             tabA = self.tabelas[tabNum + 1]
             tabB = self.tabelas[tabNum]
-        
-        for hashValue in tabA.hashTable: 
-            indice = hashValue
-            bucketA = open(tabA.name+"/Bucket"+str(indice)+".txt","r")
+        '''
+        print("iniciando join de " + tabA.name + " e " + tabB.name)
+        bytesgravados = 0
+        hashTableAfile = open(tabA.name+"_hashtable.txt","r")
+        for line in hashTableAfile: 
+            indice = line.split(" ")[0]
+            
             for key in tabA.joins:
                 if key.split(".")[1] == tabA.name:
                     continue
-                atriJuncaoA = tabA.fieldsIdx[tabA.joins[key]]
                 
-                for hashValueB in tabB.hashTable:
-                    indiceB = hashValueB
-                    bucketB = open(tabB.name+"/Bucket"+str(indiceB)+".txt","r")
+                atriJuncaoA = tabA.fieldsIdx[tabA.joins[key]]
+               
+                try:
+                    os.mkdir(tabA.name+"_"+tabB.name)
+                except FileExistsError:
+                    FileExistsError.errno
+                tabAB = tableSql(tabA.name+"_"+tabB.name, "", "", "", "")
+                bucketA = open(tabA.name+"/Bucket"+str(indice)+".txt","r")
+                linhasA = bucketA.readlines()
+                bucketB = open(tabB.name+"/Bucket"+str(indice)+".txt","r")
+                linhasB = bucketB.readlines()
+                for A in linhasA:
+                    
+                    A = A.strip()
+                    linhaA = A.split("(###)")
+                    indiceB = line.split(" ")[0]
+                    
                     atriJuncaoB = tabB.fieldsIdx[tabB.joins[tabB.name +"."+tabA.name]]
-                    try:
-                        os.mkdir(tabA.name+"_"+tabB.name)
-                    except FileExistsError:
-                        FileExistsError.errno
-                    tabAB = open(tabA.name+"_"+tabB.name+"/"+tabA.name+"_"+tabB.name+".txt","a+")
-                    for A in bucketA:
-                        linhaA = A.split()
-                        for B in bucketB:
-                            linhaB = B.split()
-                            if (linhaA[atriJuncaoA]==linhaB[atriJuncaoB]):
-                                
-                                linhafinal = ""
-                                for item in linhaA:
-                                    linhafinal = linhafinal + item + " "
-                                for item in linhaB:
-                                    linhafinal = linhafinal + item + " "
-                                
-                                tabAB.write(linhafinal+"\n")
-                        tabAB.close()
-                bucketB.close()
-            bucketA.close()
+                    for B in linhasB:
+                        
+                        B = B.strip()
+                        linhaB = B.split("(###)")
+                        #print(indice)
+                        #print(linhaA)
+                        
+                        if (linhaA[atriJuncaoA]==linhaB[atriJuncaoB]):
+                            
+                            linhafinal = A + " " + B
+                            #adiciona linha ao buffer
+                            if "temp" in tabAB.buffer:
+                                tabAB.buffer["temp"] += linhafinal + '\n'
+                            else:
+                                tabAB.buffer["temp"] = linhafinal + '\n'
+                            if(tabAB.getBufferSize() > tabAB.bufferlimit):
+                                bytesgravados = bytesgravados + tabAB.getBufferSize()
+                                print("gravados via buffer "+ str(bytesgravados) + "...")
+                                tabAB.descarregarDados()
+                    bucketB.close()
+                bucketA.close()
+            bytesgravados = bytesgravados + tabAB.getBufferSize()
+            print("gravados "+ str(bytesgravados) + " bytes...")
+            tabAB.descarregarDados() # se for menor que o buffer
         fim = time.time()
         print("Tempo total Join "+ tabA.name+ " com " +tabB.name + ": ",fim-inicio)
-        
+        hashTableAfile.close()
+        hashTableBfile.close()
         if(tabNum < len(self.tabelas) - 2):
             # chama recursivo ate a penultima tabela
             self.joins(tabNum + 1)

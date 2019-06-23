@@ -11,10 +11,10 @@ def conexaoBanco():
 	#senha = getpass.getpass('Entre com a senha do SQL Server: ')
 	
 	conexaoBanco = pyodbc.connect('DRIVER={ODBC Driver 11 for SQL Server};'
-	                      'SERVER=SERVIDOR\SQLEXPRESS;'
+	                      'SERVER=NOTE\SQLEXPRESS;'
 	                      'DATABASE=tpc_h;'
 	                      'UID=sa;'
-	                      'PWD=1234;')
+	                      'PWD;')
 
 	cursor = conexaoBanco.cursor()
 	return cursor
